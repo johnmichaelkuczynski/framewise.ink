@@ -3,7 +3,7 @@ import {
   useListPersons, useCreatePerson, useGetPerson,
   useListConversations, useCreateConversation,
   useDeletePerson, useDeleteConversation,
-  getGetPersonProfileQueryKey, getListPersonsQueryKey, getListConversationsQueryKey,
+  getGetPersonProfileQueryKey, getGetPersonQueryKey, getListPersonsQueryKey, getListConversationsQueryKey,
 } from "@workspace/api-client-react";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -15,12 +15,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Save, Sparkles, Plus, Trash2, MessageSquare, User, ChevronRight, FileText } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, Plus, Trash2, MessageSquare, User, ChevronRight, FileText, Camera, ScanLine } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Chat } from "@/pages/chat";
+import { uploadPersonPhoto, type PhotoAnalysis } from "@/lib/api";
 
 const profileSchema = z.object({
   genderPatterns: z.string().optional(),
@@ -38,9 +39,32 @@ const profileSchema = z.object({
 export function RelationshipProfile({ id }: { id: number }) {
   const { data: profile, isLoading } = useGetPersonProfile(id);
   const { data: summary } = useGetPersonSummary(id);
+  const { data: person } = useGetPerson(id, { query: { enabled: !!id, queryKey: getGetPersonQueryKey(id) } });
   const updateProfile = useUpdatePersonProfile();
   const queryClient = useQueryClient();
   const initRef = useRef<number | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoAnalysis, setPhotoAnalysis] = useState<PhotoAnalysis | null>(null);
+
+  useEffect(() => {
+    if (person?.photoUrl) setPhotoUrl(person.photoUrl);
+  }, [person?.photoUrl]);
+
+  const handlePhotoUpload = async (file: File) => {
+    setIsUploadingPhoto(true);
+    try {
+      const result = await uploadPersonPhoto(id, file);
+      setPhotoUrl(result.photoUrl);
+      setPhotoAnalysis(result.analysis);
+      queryClient.invalidateQueries({ queryKey: getGetPersonQueryKey(id) });
+    } catch {
+      // silent fail
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
@@ -105,9 +129,55 @@ export function RelationshipProfile({ id }: { id: number }) {
         </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Psychological Profile</h1>
-          <p className="text-muted-foreground text-sm font-mono uppercase">Target ID: {id}</p>
+          <p className="text-muted-foreground text-sm font-mono uppercase">Target: {person?.name ?? `ID ${id}`}</p>
         </div>
       </div>
+
+      {/* Photo upload + Vision analysis */}
+      <Card className="shadow-none border-border bg-card/50">
+        <CardContent className="p-5">
+          <input ref={photoInputRef} type="file" accept="image/*" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f); e.target.value = ""; }} />
+          <div className="flex items-start gap-5">
+            <div className="relative flex-shrink-0">
+              {photoUrl ? (
+                <img src={photoUrl} alt="Target" className="h-20 w-20 rounded-lg object-cover border border-border" />
+              ) : (
+                <div className="h-20 w-20 rounded-lg bg-muted border border-dashed border-border flex items-center justify-center">
+                  <User className="h-8 w-8 text-muted-foreground/30" />
+                </div>
+              )}
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                className="absolute -bottom-2 -right-2 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow hover:bg-primary/80 transition-colors"
+                title="Upload photo" data-testid="button-upload-photo"
+              >
+                {isUploadingPhoto ? <span className="h-3 w-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+            <div className="flex-1 min-w-0">
+              {photoAnalysis ? (
+                <div className="space-y-2">
+                  <p className="text-xs font-mono uppercase text-muted-foreground flex items-center gap-1.5"><ScanLine className="h-3.5 w-3.5 text-primary" /> Vision Analysis</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                    {photoAnalysis.emotionalTone && <div><span className="text-muted-foreground">Emotional tone: </span><span>{photoAnalysis.emotionalTone}</span></div>}
+                    {photoAnalysis.confidenceLevel && <div><span className="text-muted-foreground">Confidence: </span><span>{photoAnalysis.confidenceLevel}</span></div>}
+                    {photoAnalysis.formalitySignals && <div><span className="text-muted-foreground">Presentation: </span><span>{photoAnalysis.formalitySignals}</span></div>}
+                    {photoAnalysis.appearance && <div><span className="text-muted-foreground">Appearance: </span><span>{photoAnalysis.appearance}</span></div>}
+                    {photoAnalysis.communicationCues && <div className="col-span-2"><span className="text-muted-foreground">Cues: </span><span>{photoAnalysis.communicationCues}</span></div>}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm font-medium mb-1">Reference Photo</p>
+                  <p className="text-xs text-muted-foreground">Upload a photo of {person?.name ?? "this person"} — Vision AI will analyze their emotional tone, confidence, presentation style, and generate communication cues automatically.</p>
+                  {isUploadingPhoto && <p className="text-xs text-primary mt-2 animate-pulse font-mono">Analyzing photo...</p>}
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {summary && summary.keyInsights.length > 0 && (
         <Card className="border-primary/30 bg-primary/5 shadow-none mb-8">

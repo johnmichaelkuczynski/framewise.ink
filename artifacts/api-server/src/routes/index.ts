@@ -6,6 +6,7 @@ import virtualPersonsRouter from "./virtual-persons";
 import conversationsRouter from "./conversations";
 import messagesRouter from "./messages";
 import documentsRouter from "./documents";
+import photosRouter from "./photos";
 import dashboardRouter from "./dashboard";
 
 const router: IRouter = Router();
@@ -17,6 +18,7 @@ router.use(virtualPersonsRouter);
 router.use(conversationsRouter);
 router.use(messagesRouter);
 router.use(documentsRouter);
+router.use(photosRouter);
 router.use(dashboardRouter);
 
 export default router;

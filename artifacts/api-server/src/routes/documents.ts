@@ -4,10 +4,13 @@ import { eq, and } from "drizzle-orm";
 import { db, documentsTable } from "@workspace/db";
 import { GetDocumentParams, DeleteDocumentParams } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
+import { openai } from "@workspace/integrations-openai-ai-server";
 
 const router = Router();
 
 router.use(requireAuth);
+
+const IMAGE_TYPES = ["image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"];
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -18,14 +21,42 @@ const upload = multer({
       "application/pdf",
       "application/msword",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      ...IMAGE_TYPES,
     ];
     if (allowed.includes(file.mimetype) || file.mimetype.startsWith("text/")) {
       cb(null, true);
     } else {
-      cb(new Error("File type not supported. Upload .txt, .pdf, .doc, or .docx"));
+      cb(new Error("Unsupported file type. Upload .txt, .pdf, .doc, .docx, or an image."));
     }
   },
 });
+
+async function ocrWithVision(buffer: Buffer, mimeType: string): Promise<string> {
+  const base64 = buffer.toString("base64");
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o",
+    max_tokens: 4096,
+    messages: [
+      {
+        role: "user",
+        content: [
+          {
+            type: "text",
+            text: "Extract ALL text from this image verbatim. Preserve the original layout and formatting as much as possible. Return only the extracted text — no commentary, no explanations.",
+          },
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:${mimeType};base64,${base64}`,
+              detail: "high",
+            },
+          },
+        ],
+      },
+    ],
+  });
+  return response.choices[0]?.message?.content ?? "";
+}
 
 // GET /documents
 router.get("/documents", async (req, res): Promise<void> => {
@@ -34,12 +65,10 @@ router.get("/documents", async (req, res): Promise<void> => {
     .from(documentsTable)
     .where(eq(documentsTable.userId, req.user!.id))
     .orderBy(documentsTable.createdAt);
-  res.json(
-    docs.map((d) => ({ ...d, createdAt: d.createdAt.toISOString() })),
-  );
+  res.json(docs.map((d) => ({ ...d, createdAt: d.createdAt.toISOString() })));
 });
 
-// POST /documents (multipart upload)
+// POST /documents (multipart upload — text, PDF, or image OCR)
 router.post("/documents", upload.single("file"), async (req, res): Promise<void> => {
   if (!req.file) {
     res.status(400).json({ error: "No file uploaded" });
@@ -51,10 +80,16 @@ router.post("/documents", upload.single("file"), async (req, res): Promise<void>
     ? parseInt(req.body.virtualPersonId, 10)
     : null;
 
-  // Basic text extraction for text files
   let extractedText: string | null = null;
+
   if (req.file.mimetype === "text/plain") {
     extractedText = req.file.buffer.toString("utf-8").slice(0, 50000);
+  } else if (IMAGE_TYPES.includes(req.file.mimetype)) {
+    try {
+      extractedText = await ocrWithVision(req.file.buffer, req.file.mimetype);
+    } catch (err) {
+      req.log.warn({ err }, "Vision OCR failed, saving document without text");
+    }
   }
 
   const [doc] = await db

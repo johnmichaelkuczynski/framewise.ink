@@ -1,5 +1,44 @@
 import { Document } from "@workspace/api-client-react";
 
+export interface PhotoAnalysis {
+  appearance?: string;
+  emotionalTone?: string;
+  confidenceLevel?: string;
+  formalitySignals?: string;
+  communicationCues?: string;
+  genderPatterns?: string;
+}
+
+export async function uploadPersonPhoto(
+  personId: number,
+  file: File,
+): Promise<{ photoUrl: string; analysis: PhotoAnalysis | null }> {
+  const formData = new FormData();
+  formData.append("photo", file);
+  const resp = await fetch(`/api/persons/${personId}/photo`, {
+    method: "POST",
+    body: formData,
+    credentials: "include",
+  });
+  if (!resp.ok) throw new Error("Photo upload failed");
+  return resp.json();
+}
+
+export async function uploadVirtualPersonPhoto(
+  virtualPersonId: number,
+  file: File,
+): Promise<{ photoUrl: string; analysis: PhotoAnalysis | null }> {
+  const formData = new FormData();
+  formData.append("photo", file);
+  const resp = await fetch(`/api/virtual-persons/${virtualPersonId}/photo`, {
+    method: "POST",
+    body: formData,
+    credentials: "include",
+  });
+  if (!resp.ok) throw new Error("Photo upload failed");
+  return resp.json();
+}
+
 export async function sendMessageStream(
   conversationId: number,
   content: string,

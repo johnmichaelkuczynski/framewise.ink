@@ -3,7 +3,7 @@ import {
   useListVirtualPersons, useCreateVirtualPerson, useGetVirtualPerson,
   useListConversations, useCreateConversation,
   useDeleteVirtualPerson, useDeleteConversation,
-  getGetVirtualPersonProfileQueryKey, getListVirtualPersonsQueryKey, getListConversationsQueryKey,
+  getGetVirtualPersonProfileQueryKey, getGetVirtualPersonQueryKey, getListVirtualPersonsQueryKey, getListConversationsQueryKey,
 } from "@workspace/api-client-react";
 import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -15,12 +15,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Save, Plus, Trash2, MessageSquare, Cpu, ChevronRight, FileText } from "lucide-react";
+import { ArrowLeft, Save, Plus, Trash2, MessageSquare, Cpu, ChevronRight, FileText, Camera, ScanLine } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { Chat } from "@/pages/chat";
+import { uploadVirtualPersonPhoto, type PhotoAnalysis } from "@/lib/api";
 
 const profileSchema = z.object({
   genderPatterns: z.string().optional(),
@@ -37,9 +38,32 @@ const profileSchema = z.object({
 
 export function VirtualPersonProfile({ id }: { id: number }) {
   const { data: profile, isLoading } = useGetVirtualPersonProfile(id);
+  const { data: person } = useGetVirtualPerson(id, { query: { enabled: !!id, queryKey: getGetVirtualPersonQueryKey(id) } });
   const updateProfile = useUpdateVirtualPersonProfile();
   const queryClient = useQueryClient();
   const initRef = useRef<number | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState(false);
+  const [photoAnalysis, setPhotoAnalysis] = useState<PhotoAnalysis | null>(null);
+
+  useEffect(() => {
+    if (person?.photoUrl) setPhotoUrl(person.photoUrl);
+  }, [person?.photoUrl]);
+
+  const handlePhotoUpload = async (file: File) => {
+    setIsUploadingPhoto(true);
+    try {
+      const result = await uploadVirtualPersonPhoto(id, file);
+      setPhotoUrl(result.photoUrl);
+      setPhotoAnalysis(result.analysis);
+      queryClient.invalidateQueries({ queryKey: getGetVirtualPersonQueryKey(id) });
+    } catch {
+      // silent fail
+    } finally {
+      setIsUploadingPhoto(false);
+    }
+  };
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
@@ -103,9 +127,55 @@ export function VirtualPersonProfile({ id }: { id: number }) {
         </Link>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-primary">System Parameters</h1>
-          <p className="text-primary/60 text-sm font-mono uppercase">Construct ID: {id}</p>
+          <p className="text-primary/60 text-sm font-mono uppercase">Construct: {person?.name ?? `ID ${id}`}</p>
         </div>
       </div>
+
+      {/* Photo upload + Vision analysis */}
+      <Card className="shadow-none border-primary/20 bg-primary/5">
+        <CardContent className="p-5">
+          <input ref={photoInputRef} type="file" accept="image/*" className="hidden"
+            onChange={e => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(f); e.target.value = ""; }} />
+          <div className="flex items-start gap-5">
+            <div className="relative flex-shrink-0">
+              {photoUrl ? (
+                <img src={photoUrl} alt="Construct" className="h-20 w-20 rounded-lg object-cover border border-primary/30" />
+              ) : (
+                <div className="h-20 w-20 rounded-lg bg-primary/10 border border-dashed border-primary/30 flex items-center justify-center">
+                  <Cpu className="h-8 w-8 text-primary/20" />
+                </div>
+              )}
+              <button
+                onClick={() => photoInputRef.current?.click()}
+                className="absolute -bottom-2 -right-2 h-7 w-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow hover:bg-primary/80 transition-colors"
+                title="Upload reference image" data-testid="button-upload-photo"
+              >
+                {isUploadingPhoto ? <span className="h-3 w-3 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" /> : <Camera className="h-3.5 w-3.5" />}
+              </button>
+            </div>
+            <div className="flex-1 min-w-0">
+              {photoAnalysis ? (
+                <div className="space-y-2">
+                  <p className="text-xs font-mono uppercase text-primary/60 flex items-center gap-1.5"><ScanLine className="h-3.5 w-3.5 text-primary" /> Vision Scan</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                    {photoAnalysis.emotionalTone && <div><span className="text-primary/50">Emotional tone: </span><span className="text-primary">{photoAnalysis.emotionalTone}</span></div>}
+                    {photoAnalysis.confidenceLevel && <div><span className="text-primary/50">Confidence: </span><span className="text-primary">{photoAnalysis.confidenceLevel}</span></div>}
+                    {photoAnalysis.formalitySignals && <div><span className="text-primary/50">Presentation: </span><span className="text-primary">{photoAnalysis.formalitySignals}</span></div>}
+                    {photoAnalysis.appearance && <div><span className="text-primary/50">Appearance: </span><span className="text-primary">{photoAnalysis.appearance}</span></div>}
+                    {photoAnalysis.communicationCues && <div className="col-span-2"><span className="text-primary/50">Cues: </span><span className="text-primary">{photoAnalysis.communicationCues}</span></div>}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <p className="text-sm font-medium text-primary mb-1">Reference Image</p>
+                  <p className="text-xs text-primary/50">Upload a reference image for {person?.name ?? "this construct"} — Vision AI will scan their emotional signature, confidence profile, and extract communication cues to pre-populate system parameters.</p>
+                  {isUploadingPhoto && <p className="text-xs text-primary mt-2 animate-pulse font-mono">Scanning image...</p>}
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">

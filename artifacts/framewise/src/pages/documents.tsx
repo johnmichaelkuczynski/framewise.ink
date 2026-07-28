@@ -85,12 +85,12 @@ export function Documents() {
               handleUpload(e.target.files[0]);
             }
           }}
-          accept=".pdf,.doc,.docx,.txt,.csv"
+          accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.webp,.gif"
         />
         <UploadCloud className={`h-10 w-10 mx-auto mb-4 ${isDragging ? 'text-primary' : 'text-muted-foreground'}`} />
         <p className="text-sm font-medium mb-1">Click to upload or drag and drop</p>
-        <p className="text-xs text-muted-foreground font-mono">PDF, DOCX, TXT accepted for extraction.</p>
-        {isUploading && <p className="text-primary text-xs mt-4 animate-pulse">Extracting contents...</p>}
+        <p className="text-xs text-muted-foreground font-mono">PDF, DOCX, TXT — or images (PNG, JPG, WEBP) for OCR text extraction.</p>
+        {isUploading && <p className="text-primary text-xs mt-4 animate-pulse font-mono">Running OCR extraction via Vision AI...</p>}
       </div>
 
       <div className="flex items-center space-x-2 relative">
