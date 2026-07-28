@@ -1,5 +1,4 @@
 import { Shell } from "@/components/layout/Shell";
-import { Login } from "@/pages/login";
 import { Dashboard } from "@/pages/dashboard";
 import { Chat } from "@/pages/chat";
 import { Route, Switch, Router as WouterRouter } from "wouter";
@@ -12,10 +11,12 @@ import { Documents } from "@/pages/documents";
 function AppRouter() {
   return (
     <Switch>
-      <Route path="/" component={Login} />
+      {/* Free-form chat is the landing page — no login required */}
+      <Route path="/"><Shell><Chat mode="free" /></Shell></Route>
+
       <Route path="/dashboard"><Shell><Dashboard /></Shell></Route>
       <Route path="/chat"><Shell><Chat mode="free" /></Shell></Route>
-      
+
       <Route path="/relationships"><Shell><Relationships /></Shell></Route>
       <Route path="/relationships/new"><Shell><NewRelationship /></Shell></Route>
       <Route path="/relationships/:id">

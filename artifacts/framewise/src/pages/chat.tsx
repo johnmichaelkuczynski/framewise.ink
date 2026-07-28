@@ -1,10 +1,42 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Copy, Bot, CheckCircle2 } from "lucide-react";
+import { Send, Copy, Bot, CheckCircle2, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useCreateConversation } from "@workspace/api-client-react";
+import { useCreateConversation, useGetMe } from "@workspace/api-client-react";
 import { sendMessageStream } from "@/lib/api";
 import { cn } from "@/lib/utils";
+
+async function sendFreeMessageStream(
+  content: string,
+  onChunk: (chunk: string) => void,
+  onDone: () => void,
+) {
+  const resp = await fetch("/api/chat/free", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ content }),
+  });
+  if (!resp.ok || !resp.body) { onDone(); return; }
+  const reader = resp.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += decoder.decode(value, { stream: true });
+    const parts = buf.split("\n\n");
+    buf = parts.pop() ?? "";
+    for (const part of parts) {
+      if (!part.startsWith("data:")) continue;
+      try {
+        const json = JSON.parse(part.slice(5).trim());
+        if (json.content) onChunk(json.content);
+        if (json.done) { onDone(); return; }
+      } catch { /* skip */ }
+    }
+  }
+  onDone();
+}
 
 interface ChatMessage {
   id: string;
@@ -18,10 +50,14 @@ export function Chat({ mode = "free", personId, virtualPersonId, conversationId:
   const [isStreaming, setIsStreaming] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(initialConversationId ?? null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { data: user } = useGetMe();
   
   const createConversation = useCreateConversation();
   const createConversationMutate = useRef(createConversation.mutateAsync);
   createConversationMutate.current = createConversation.mutateAsync;
+
+  // In free mode, unauthenticated users get the stateless /api/chat/free endpoint
+  const isAnonymousFree = mode === "free" && !user;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -45,41 +81,36 @@ export function Chat({ mode = "free", personId, virtualPersonId, conversationId:
     setInput("");
     setIsStreaming(true);
 
-    try {
-      let currentConvId = conversationId;
-      if (!currentConvId) {
-        const conv = await createConversationMutate.current({
-          data: {
-            mode,
-            personId,
-            virtualPersonId,
-            title: userMessage.content.substring(0, 50) + "..."
-          }
-        });
-        currentConvId = conv.id;
-        setConversationId(conv.id);
-      }
+    const assistantId = (Date.now() + 1).toString();
+    setMessages(prev => [...prev, { id: assistantId, role: "assistant", content: "" }]);
 
-      // Add placeholder for assistant message
-      const assistantId = (Date.now() + 1).toString();
-      setMessages(prev => [...prev, { id: assistantId, role: "assistant", content: "" }]);
-
-      await sendMessageStream(
-        currentConvId,
-        userMessage.content,
-        (chunk) => {
-          setMessages(prev => 
-            prev.map(msg => 
-              msg.id === assistantId 
-                ? { ...msg, content: msg.content + chunk }
-                : msg
-            )
-          );
-        },
-        () => {
-          setIsStreaming(false);
-        }
+    const onChunk = (chunk: string) => {
+      setMessages(prev =>
+        prev.map(msg => msg.id === assistantId ? { ...msg, content: msg.content + chunk } : msg)
       );
+    };
+    const onDone = () => setIsStreaming(false);
+
+    try {
+      if (isAnonymousFree) {
+        // No session — use stateless endpoint, nothing saved
+        await sendFreeMessageStream(userMessage.content, onChunk, onDone);
+      } else {
+        let currentConvId = conversationId;
+        if (!currentConvId) {
+          const conv = await createConversationMutate.current({
+            data: {
+              mode,
+              personId,
+              virtualPersonId,
+              title: userMessage.content.substring(0, 50) + "...",
+            },
+          });
+          currentConvId = conv.id;
+          setConversationId(conv.id);
+        }
+        await sendMessageStream(currentConvId, userMessage.content, onChunk, onDone);
+      }
     } catch (err) {
       console.error(err);
       setIsStreaming(false);
@@ -111,6 +142,12 @@ export function Chat({ mode = "free", personId, virtualPersonId, conversationId:
             <p className="text-muted-foreground text-sm">
               Enter the draft message or communication intent. The system will analyze the psychological vectors and output an optimized rephrasing designed to land perfectly with the target.
             </p>
+            {isAnonymousFree && (
+              <a href="/api/auth/google" className="mt-6 inline-flex items-center gap-2 text-xs font-mono text-muted-foreground border border-border rounded-md px-3 py-2 hover:bg-accent/50 transition-colors">
+                <LogIn className="h-3.5 w-3.5" />
+                Sign in to save conversations &amp; build profiles
+              </a>
+            )}
           </div>
         ) : (
           <div className="max-w-3xl mx-auto space-y-8 pb-12">
