@@ -1,0 +1,2 @@
+- [FrameWise OAuth setup](framewise-oauth.md) — Google OAuth credentials stored; callbackURL built dynamically from REPLIT_DEV_DOMAIN at runtime
+- [FrameWise import pattern](framewise-imports.md) — design subagent only builds profile components; list/create/view pages must be appended to the same file with consolidated imports at top
