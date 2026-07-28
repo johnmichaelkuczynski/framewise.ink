@@ -1,0 +1,149 @@
+COMPLETE INSTRUCTIONS FOR REPLIT AGENT
+App Name (working title): FrameWise
+Purpose
+An AI tool that helps the user rephrase any request, instruction, or idea so it produces reliable action from a specific person. It accounts for sex-typical differences plus the individual’s history, cognitive style, emotional profile, and known preferences.
+Includes a Virtual Relationship sandbox so the user can practice and refine people skills on simulated persons before using the same techniques on real ones.
+
+1. Three Modes
+
+Free-form Mode
+Stateless. Only uses information supplied in the current session.
+Ongoing Relationship Mode (Real)
+Persistent named profiles for real people. Full history, documents, photos, and evolving psychological/operational profile.
+Virtual Relationship Mode
+Identical system to Ongoing Relationship Mode, but the target is a fully simulated AI person.
+User can create virtual people with chosen traits (gender, cognitive style, emotional style, sensitivities, etc.).
+The virtual person maintains persistent memory and reacts realistically over multiple sessions.
+User practices framing, receives reactions, and gets analytics on what worked.
+Same profile reports, Tractatus memory, and optimization tools as real relationships.
+Purpose: safe skill refinement.
+
+
+
+2. Mandatory Output Format (Strict)
+When the user asks how to phrase something, the app must reply with exactly two sections:
+1. Brief diagnosis
+(2–5 short lines maximum)
+2. Optimized output
+(Ready-to-copy message)
+Never add explanations, lectures, or “why this works” sections.
+Concrete example from our working session (use this style):
+1. Brief diagnosis
+Too much legal theory mixed with the instructions. She needs pure step-by-step actions only.
+2. Optimized output
+Li,
+Please do these two things:
+
+Send the SEC complaint package (and Exhibits A–G) by email and certified mail to:
+
+
+Catherine Lapadula (UBS Corporate Legal)
+Elizabeth Small (Riker Danzig)
+
+In your email/letter, include this exact paragraph:
+“Please be advised that on July 9, 2026, a formal SEC Whistleblower Complaint was submitted to the U.S. Securities and Exchange Commission (TCR No. 17836-485-363-250) regarding UBS trust accounts KU-882, KU-001, KU-343, KU-997, KU-998, and KU-999. Attached hereto is a copy of the formal submission and supporting exhibits, including your written confirmation dated April 8, 2026, regarding the January 6, 2026 undated restriction notice. Be further advised that any disbursement, transfer, or modification of the trust corpus during the pendency of SDNY Case No. 1:26-cv-06119-LJL and this active SEC proceeding will be cited as willful conversion and intentional bad faith.”
+
+File a short notice on the SDNY docket (1:26-cv-06119-LJL) notifying the Court of the SEC complaint number. Attach the SEC complaint and Exhibit G.
+
+When both are done, just send me the confirmation and the ECF receipt.
+Thank you,
+John-Michael
+
+3. Evolving Profiles (Real + Virtual)
+Every target (real or virtual) maintains a living profile containing:
+
+Gender / sex-typical patterns
+Cognitive level and preferred language style
+Emotional profile and sensitivities
+What has worked (frequency + context)
+What has failed (frequency + context)
+Explicit “say this” list
+Explicit “never say this” list + likely consequences
+Affirmation levers
+Pressure levers
+Full relationship optimization roadmap
+
+User can generate a complete profile report at any time.
+Seed example – “Li Weng” profile constraints (must be pre-loaded for demonstration):
+
+Non-native English speaker
+Limited cognitive bandwidth for abstract material
+Emotionally delicate
+Freezes when legal theory is mixed with procedural instructions
+Needs pure step-by-step procedural language
+High-urgency command language produces non-compliance
+Tasks must be broken into very small concrete actions
+
+
+4. Document, OCR & Photo Features
+
+Drag-and-drop + upload for .txt, .doc, .docx, .pdf
+OCR support
+Documents storable globally or scoped to a specific relationship (real or virtual)
+Photo upload + person recognition so faces can be linked to relationship profiles
+
+
+5. Technical Stack & Credentials
+Database
+
+Neon Postgres only (DATABASE_URL)
+Never use Replit’s built-in database
+
+Authentication
+
+Real Google OAuth 2.0
+Environment variables required:
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+GOOGLE_REDIRECT_URI
+
+LLM / Core Engine
+
+At least one strong model key (reuse existing ZHI keys or designate primary)
+Suggested env vars:
+OPENAI_API_KEY or ANTHROPIC_API_KEY or GROK_API_KEY (or whichever primary you choose)
+
+Optional but recommended
+
+OCR service key (if not pure local)
+Face recognition service key (if not pure client-side)
+
+Memory Architecture
+Adapt the Skeleton + Tractatus Tree system from the uploaded blueprints so every relationship (real or virtual) has its own persistent, compressible, anti-sycophantic memory.
+Frontend / Backend
+
+React + Vite + TypeScript + Tailwind + shadcn/ui
+Express + TypeScript + Drizzle ORM
+
+
+6. UI Requirements
+
+Claude / Grok style chat interface
+Left sidebar: Free-form | Real Relationships | Virtual Relationships | Document Library
+Easy switching between past chats inside any relationship
+“Generate Full Profile Report” button on every target
+Clear creation flow for both real and virtual people
+
+
+7. Behavioral Rules
+
+Strict two-part output format only
+Never give long psychological lectures
+In relationship modes, treat every durable fact the user states as a hard future constraint
+Virtual people must react consistently with their defined profile and accumulated memory
+Default to clarity and pure procedure when the target profile indicates limited bandwidth or emotional delicacy
+
+
+8. MVP Scope
+
+Google login working
+Free-form mode fully functional
+Create real Ongoing Relationships
+Create Virtual Relationships
+Document upload + basic OCR
+Correct short output format
+Basic evolving profiles that update from interactions
+Neon Postgres persistence
+Ability to generate a simple profile report
+
+Once stable, deepen the Tractatus memory and full analytics.

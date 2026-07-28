@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "FrameWise"
+version = "1.0.0"
+id = "artifacts/framewise"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24081
+
+[services.development]
+run = "pnpm --filter @workspace/framewise run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/framewise", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/framewise/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24081"
+BASE_PATH = "/"

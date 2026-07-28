@@ -3,20 +3,34 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: FrameWise API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: persons
+    description: Real relationship profiles
+  - name: virtualPersons
+    description: Virtual person profiles
+  - name: conversations
+    description: Chat conversations
+  - name: messages
+    description: Messages within conversations
+  - name: documents
+    description: Uploaded documents
+  - name: dashboard
+    description: Dashboard stats
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +38,524 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out current user
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /persons:
+    get:
+      operationId: listPersons
+      tags: [persons]
+      summary: List all real persons for current user
+      responses:
+        "200":
+          description: List of persons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Person"
+    post:
+      operationId: createPerson
+      tags: [persons]
+      summary: Create a new real person profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonInput"
+      responses:
+        "201":
+          description: Created person
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+
+  /persons/{id}:
+    get:
+      operationId: getPerson
+      tags: [persons]
+      summary: Get a real person by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Person
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updatePerson
+      tags: [persons]
+      summary: Update a real person profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PersonUpdate"
+      responses:
+        "200":
+          description: Updated person
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Person"
+    delete:
+      operationId: deletePerson
+      tags: [persons]
+      summary: Delete a real person
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /persons/{id}/profile:
+    get:
+      operationId: getPersonProfile
+      tags: [persons]
+      summary: Get the evolving profile for a real person
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+    patch:
+      operationId: updatePersonProfile
+      tags: [persons]
+      summary: Update the evolving profile for a real person
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+
+  /persons/{id}/summary:
+    get:
+      operationId: getPersonSummary
+      tags: [persons]
+      summary: Get an AI-generated interaction summary for a real person
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Interaction summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PersonSummary"
+
+  /virtual-persons:
+    get:
+      operationId: listVirtualPersons
+      tags: [virtualPersons]
+      summary: List all virtual persons for current user
+      responses:
+        "200":
+          description: List of virtual persons
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VirtualPerson"
+    post:
+      operationId: createVirtualPerson
+      tags: [virtualPersons]
+      summary: Create a new virtual person
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VirtualPersonInput"
+      responses:
+        "201":
+          description: Created virtual person
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VirtualPerson"
+
+  /virtual-persons/{id}:
+    get:
+      operationId: getVirtualPerson
+      tags: [virtualPersons]
+      summary: Get a virtual person by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Virtual person
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VirtualPerson"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateVirtualPerson
+      tags: [virtualPersons]
+      summary: Update a virtual person
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VirtualPersonUpdate"
+      responses:
+        "200":
+          description: Updated virtual person
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VirtualPerson"
+    delete:
+      operationId: deleteVirtualPerson
+      tags: [virtualPersons]
+      summary: Delete a virtual person
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /virtual-persons/{id}/profile:
+    get:
+      operationId: getVirtualPersonProfile
+      tags: [virtualPersons]
+      summary: Get the evolving profile for a virtual person
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+    patch:
+      operationId: updateVirtualPersonProfile
+      tags: [virtualPersons]
+      summary: Update the evolving profile for a virtual person
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Profile"
+
+  /conversations:
+    get:
+      operationId: listConversations
+      tags: [conversations]
+      summary: List all conversations for current user
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+    post:
+      operationId: createConversation
+      tags: [conversations]
+      summary: Create a new conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConversationInput"
+      responses:
+        "201":
+          description: Created conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/{id}:
+    get:
+      operationId: getConversation
+      tags: [conversations]
+      summary: Get a conversation by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteConversation
+      tags: [conversations]
+      summary: Delete a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /conversations/{id}/messages:
+    get:
+      operationId: listMessages
+      tags: [messages]
+      summary: List messages in a conversation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendMessage
+      tags: [messages]
+      summary: Send a user message and receive AI response (SSE stream)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "200":
+          description: SSE stream of AI response chunks
+          content:
+            text/event-stream:
+              schema:
+                type: string
+
+  /documents:
+    get:
+      operationId: listDocuments
+      tags: [documents]
+      summary: List all documents for current user
+      responses:
+        "200":
+          description: List of documents
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Document"
+
+  /documents/{id}:
+    get:
+      operationId: getDocument
+      tags: [documents]
+      summary: Get a document by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Document
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteDocument
+      tags: [documents]
+      summary: Delete a document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get dashboard summary stats
+      responses:
+        "200":
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardStats"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +566,411 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        picture:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - email
+        - name
+        - picture
+        - createdAt
+
+    Person:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        name:
+          type: string
+        relationship:
+          type: ["string", "null"]
+        gender:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        photoUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - userId
+        - name
+        - relationship
+        - gender
+        - notes
+        - photoUrl
+        - createdAt
+        - updatedAt
+
+    PersonInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        relationship:
+          type: string
+        gender:
+          type: string
+        notes:
+          type: string
+        photoUrl:
+          type: string
+      required:
+        - name
+
+    PersonUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        relationship:
+          type: string
+        gender:
+          type: string
+        notes:
+          type: string
+        photoUrl:
+          type: string
+
+    Profile:
+      type: object
+      properties:
+        id:
+          type: integer
+        personId:
+          type: ["integer", "null"]
+        virtualPersonId:
+          type: ["integer", "null"]
+        genderPatterns:
+          type: ["string", "null"]
+        cognitiveLevel:
+          type: ["string", "null"]
+        emotionalProfile:
+          type: ["string", "null"]
+        whatWorked:
+          type: array
+          items:
+            type: string
+        whatFailed:
+          type: array
+          items:
+            type: string
+        sayThis:
+          type: array
+          items:
+            type: string
+        neverSayThis:
+          type: array
+          items:
+            type: string
+        affirmationLevers:
+          type: ["string", "null"]
+        pressureLevers:
+          type: ["string", "null"]
+        optimizationRoadmap:
+          type: ["string", "null"]
+        updatedAt:
+          type: string
+      required:
+        - id
+        - personId
+        - virtualPersonId
+        - genderPatterns
+        - cognitiveLevel
+        - emotionalProfile
+        - whatWorked
+        - whatFailed
+        - sayThis
+        - neverSayThis
+        - affirmationLevers
+        - pressureLevers
+        - optimizationRoadmap
+        - updatedAt
+
+    ProfileUpdate:
+      type: object
+      properties:
+        genderPatterns:
+          type: string
+        cognitiveLevel:
+          type: string
+        emotionalProfile:
+          type: string
+        whatWorked:
+          type: array
+          items:
+            type: string
+        whatFailed:
+          type: array
+          items:
+            type: string
+        sayThis:
+          type: array
+          items:
+            type: string
+        neverSayThis:
+          type: array
+          items:
+            type: string
+        affirmationLevers:
+          type: string
+        pressureLevers:
+          type: string
+        optimizationRoadmap:
+          type: string
+
+    PersonSummary:
+      type: object
+      properties:
+        personId:
+          type: integer
+        name:
+          type: string
+        totalInteractions:
+          type: integer
+        successRate:
+          type: ["number", "null"]
+        keyInsights:
+          type: array
+          items:
+            type: string
+        recentTrend:
+          type: ["string", "null"]
+      required:
+        - personId
+        - name
+        - totalInteractions
+        - successRate
+        - keyInsights
+        - recentTrend
+
+    VirtualPerson:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        name:
+          type: string
+        gender:
+          type: ["string", "null"]
+        cognitiveStyle:
+          type: ["string", "null"]
+        emotionalStyle:
+          type: ["string", "null"]
+        sensitivities:
+          type: ["string", "null"]
+        backstory:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - userId
+        - name
+        - gender
+        - cognitiveStyle
+        - emotionalStyle
+        - sensitivities
+        - backstory
+        - createdAt
+        - updatedAt
+
+    VirtualPersonInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        gender:
+          type: string
+        cognitiveStyle:
+          type: string
+        emotionalStyle:
+          type: string
+        sensitivities:
+          type: string
+        backstory:
+          type: string
+      required:
+        - name
+
+    VirtualPersonUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        gender:
+          type: string
+        cognitiveStyle:
+          type: string
+        emotionalStyle:
+          type: string
+        sensitivities:
+          type: string
+        backstory:
+          type: string
+
+    Conversation:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        mode:
+          type: string
+          enum: [free, real, virtual]
+        personId:
+          type: ["integer", "null"]
+        virtualPersonId:
+          type: ["integer", "null"]
+        title:
+          type: ["string", "null"]
+        personName:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - userId
+        - mode
+        - personId
+        - virtualPersonId
+        - title
+        - personName
+        - createdAt
+        - updatedAt
+
+    ConversationInput:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum: [free, real, virtual]
+        personId:
+          type: integer
+        virtualPersonId:
+          type: integer
+        title:
+          type: string
+      required:
+        - mode
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        conversationId:
+          type: integer
+        role:
+          type: string
+          enum: [user, assistant]
+        content:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - conversationId
+        - role
+        - content
+        - createdAt
+
+    MessageInput:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+      required:
+        - content
+
+    Document:
+      type: object
+      properties:
+        id:
+          type: integer
+        userId:
+          type: string
+        personId:
+          type: ["integer", "null"]
+        virtualPersonId:
+          type: ["integer", "null"]
+        filename:
+          type: string
+        mimeType:
+          type: string
+        extractedText:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+      required:
+        - id
+        - userId
+        - personId
+        - virtualPersonId
+        - filename
+        - mimeType
+        - extractedText
+        - createdAt
+
+    DashboardStats:
+      type: object
+      properties:
+        totalPersons:
+          type: integer
+        totalVirtualPersons:
+          type: integer
+        totalConversations:
+          type: integer
+        recentConversations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Conversation"
+      required:
+        - totalPersons
+        - totalVirtualPersons
+        - totalConversations
+        - recentConversations
