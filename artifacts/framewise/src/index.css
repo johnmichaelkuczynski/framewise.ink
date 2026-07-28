@@ -49,48 +49,54 @@
 }
 
 :root {
-  /* Intelligence-agency dark theme. Everything is dark. */
-  --background: 0 0% 3%;
-  --foreground: 0 0% 98%;
+  /* ── FrameWise Light Theme — White + Rose Pink ── */
 
-  --border: 0 0% 15%;
-  --input: 0 0% 12%;
-  --ring: 0 0% 40%;
+  /* Page background: clean white */
+  --background: 0 0% 99%;
+  --foreground: 222 25% 16%;
 
-  --card: 0 0% 5%;
-  --card-foreground: 0 0% 98%;
-  --card-border: 0 0% 15%;
+  /* Borders & inputs */
+  --border: 220 15% 88%;
+  --input: 220 20% 95%;
+  --ring: 338 75% 55%;
 
-  --popover: 0 0% 6%;
-  --popover-foreground: 0 0% 98%;
-  --popover-border: 0 0% 20%;
+  /* Cards: white with a faint shadow border */
+  --card: 0 0% 100%;
+  --card-foreground: 222 25% 16%;
+  --card-border: 220 15% 90%;
 
-  /* High contrast primary, stark white */
-  --primary: 0 0% 98%;
-  --primary-foreground: 0 0% 0%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 25% 16%;
+  --popover-border: 220 15% 88%;
 
-  /* Secondary, darker gray */
-  --secondary: 0 0% 12%;
-  --secondary-foreground: 0 0% 85%;
+  /* Primary: vibrant rose pink */
+  --primary: 338 78% 52%;
+  --primary-foreground: 0 0% 100%;
 
-  --muted: 0 0% 10%;
-  --muted-foreground: 0 0% 60%;
+  /* Secondary: very light pink blush */
+  --secondary: 338 40% 95%;
+  --secondary-foreground: 338 50% 35%;
 
-  --accent: 0 0% 12%;
-  --accent-foreground: 0 0% 98%;
+  /* Muted: soft warm gray */
+  --muted: 220 20% 95%;
+  --muted-foreground: 220 15% 48%;
 
-  /* Critical alerts in deep amber/red */
+  /* Accent: light pink tint for hover states */
+  --accent: 338 45% 94%;
+  --accent-foreground: 338 60% 38%;
+
   --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 98%;
+  --destructive-foreground: 0 0% 100%;
 
-  --sidebar: 0 0% 4%;
-  --sidebar-foreground: 0 0% 85%;
-  --sidebar-border: 0 0% 12%;
+  /* Sidebar: very light blush white */
+  --sidebar: 338 30% 97%;
+  --sidebar-foreground: 222 25% 22%;
+  --sidebar-border: 338 20% 90%;
 
   --app-font-sans: 'Geist', sans-serif;
   --app-font-mono: 'Geist Mono', monospace;
-  
-  --radius: 0.25rem;
+
+  --radius: 0.625rem;
 }
 
 @layer base {
@@ -103,32 +109,28 @@
   }
 }
 
-/* Base custom scrollbar for dark UI */
+/* Scrollbar — soft pink tint */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
-  border-radius: 4px;
+  background: hsl(338 40% 85%);
+  border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground));
+  background: hsl(338 55% 72%);
 }
 
 .text-balance {
   text-wrap: balance;
 }
 
+/* Subtle dot grid for chat background */
 .mono-box {
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 1px,
-    rgba(255, 255, 255, 0.02) 1px,
-    rgba(255, 255, 255, 0.02) 2px
-  );
+  background: radial-gradient(circle, hsl(338 60% 90% / 0.45) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
