@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Copy, Bot, CheckCircle2, LogIn } from "lucide-react";
+import { Send, Copy, Bot, CheckCircle2, LogIn, Paperclip, X, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateConversation, useGetMe } from "@workspace/api-client-react";
@@ -51,6 +51,53 @@ export function Chat({ mode = "free", personId, virtualPersonId, conversationId:
   const [conversationId, setConversationId] = useState<number | null>(initialConversationId ?? null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { data: user } = useGetMe();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [attachments, setAttachments] = useState<{ filename: string; text: string }[]>([]);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [attachError, setAttachError] = useState<string | null>(null);
+
+  const extractingCount = useRef(0);
+  const MAX_ATTACHMENTS = 3;
+
+  const handleFiles = async (files: FileList | File[]) => {
+    setAttachError(null);
+    const list = Array.from(files);
+    extractingCount.current += 1;
+    setIsExtracting(true);
+    try {
+      for (const file of list) {
+        let hitLimit = false;
+        setAttachments(prev => {
+          hitLimit = prev.length >= MAX_ATTACHMENTS;
+          return prev;
+        });
+        if (hitLimit) {
+          setAttachError(`You can attach up to ${MAX_ATTACHMENTS} documents per message.`);
+          break;
+        }
+        try {
+          const formData = new FormData();
+          formData.append("file", file);
+          const resp = await fetch("/api/extract-text", { method: "POST", body: formData });
+          if (!resp.ok) {
+            const err = await resp.json().catch(() => ({}));
+            setAttachError(err.error ?? `Could not read ${file.name}`);
+            continue;
+          }
+          const data = await resp.json();
+          setAttachments(prev =>
+            prev.length >= MAX_ATTACHMENTS ? prev : [...prev, { filename: data.filename, text: data.text }]
+          );
+        } catch {
+          setAttachError(`Could not read ${file.name} — check your connection and try again.`);
+        }
+      }
+    } finally {
+      extractingCount.current -= 1;
+      if (extractingCount.current === 0) setIsExtracting(false);
+    }
+  };
   
   const createConversation = useCreateConversation();
   const createConversationMutate = useRef(createConversation.mutateAsync);
@@ -69,13 +116,22 @@ export function Chat({ mode = "free", personId, virtualPersonId, conversationId:
 
   const handleSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
-    if (!input.trim() || isStreaming) return;
+    if ((!input.trim() && attachments.length === 0) || isStreaming || isExtracting) return;
+
+    let content = input.trim();
+    if (attachments.length > 0) {
+      const docs = attachments
+        .map(a => `--- Attached document: ${a.filename} ---\n${a.text}`)
+        .join("\n\n");
+      content = content ? `${content}\n\n${docs}` : docs;
+    }
 
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
       role: "user",
-      content: input.trim()
+      content
     };
+    setAttachments([]);
     
     setMessages(prev => [...prev, userMessage]);
     setInput("");
@@ -160,23 +216,70 @@ export function Chat({ mode = "free", personId, virtualPersonId, conversationId:
       </div>
 
       <div className="p-4 md:p-6 bg-background/80 backdrop-blur-md border-t border-border z-20">
-        <div className="max-w-3xl mx-auto relative">
-          <Textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your raw message or intent here..."
-            className="pr-14 resize-none min-h-[60px] max-h-[200px] bg-card border-border font-mono text-sm shadow-xl focus-visible:ring-1 focus-visible:ring-primary/50 rounded-lg py-4"
-            disabled={isStreaming}
-          />
-          <Button 
-            size="icon" 
-            className="absolute right-2 bottom-2 h-8 w-8 rounded-md hover:scale-105 transition-transform" 
-            onClick={handleSubmit}
-            disabled={!input.trim() || isStreaming}
+        <div className="max-w-3xl mx-auto">
+          {/* Attachment chips */}
+          {(attachments.length > 0 || isExtracting || attachError) && (
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              {attachments.map((a, i) => (
+                <span key={i} className="inline-flex items-center gap-1.5 bg-secondary text-secondary-foreground text-xs rounded-full pl-2.5 pr-1.5 py-1" data-testid={`chip-attachment-${i}`}>
+                  <FileText className="h-3 w-3" />
+                  <span className="max-w-[180px] truncate">{a.filename}</span>
+                  <button onClick={() => setAttachments(prev => prev.filter((_, j) => j !== i))} className="hover:bg-primary/20 rounded-full p-0.5">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+              {isExtracting && <span className="text-xs text-primary animate-pulse font-mono">Reading document...</span>}
+              {attachError && <span className="text-xs text-destructive">{attachError}</span>}
+            </div>
+          )}
+
+          <div
+            className={cn("relative rounded-lg transition-colors", isDragging && "ring-2 ring-primary ring-offset-2")}
+            onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragging(false);
+              if (e.dataTransfer.files?.length) handleFiles(e.dataTransfer.files);
+            }}
           >
-            <Send className="h-4 w-4" />
-          </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              accept=".txt,.pdf,.docx,.png,.jpg,.jpeg,.webp"
+              onChange={(e) => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = ""; }}
+            />
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={isDragging ? "Drop your document here..." : "Type your message — or drop in a proposal, contract, or document..."}
+              className="pl-12 pr-14 resize-none min-h-[60px] max-h-[200px] bg-card border-border font-mono text-sm shadow-xl focus-visible:ring-1 focus-visible:ring-primary/50 rounded-lg py-4"
+              disabled={isStreaming}
+            />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="absolute left-2 bottom-2 h-8 w-8 rounded-md text-muted-foreground hover:text-primary"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isStreaming || isExtracting}
+              title="Attach document (.txt, .pdf, .docx, image)"
+              data-testid="button-attach-file"
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              className="absolute right-2 bottom-2 h-8 w-8 rounded-md hover:scale-105 transition-transform"
+              onClick={handleSubmit}
+              disabled={(!input.trim() && attachments.length === 0) || isStreaming || isExtracting}
+            >
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
