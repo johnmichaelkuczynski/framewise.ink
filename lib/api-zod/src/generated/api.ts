@@ -37,49 +37,6 @@ export const LogoutResponse = zod.object({
 
 
 /**
- * @summary List active API keys for the signed-in user
- */
-export const ListApiKeysResponseItem = zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "keyPrefix": zod.string(),
-  "createdAt": zod.coerce.date(),
-  "lastUsedAt": zod.coerce.date().nullable()
-})
-export const ListApiKeysResponse = zod.array(ListApiKeysResponseItem)
-
-
-/**
- * @summary Create an API key; the secret is returned only once
- */
-export const createApiKeyBodyNameMax = 80;
-
-
-
-export const CreateApiKeyBody = zod.object({
-  "name": zod.string().min(1).max(createApiKeyBodyNameMax)
-})
-
-export const CreateApiKeyResponse = zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "key": zod.string().describe('Full API key, returned only once'),
-  "keyPrefix": zod.string(),
-  "message": zod.string()
-})
-
-
-/**
- * @summary Permanently revoke an API key
- */
-export const RevokeApiKeyParams = zod.object({
-  "id": zod.coerce.string()
-})
-
-export const RevokeApiKeyResponse = zod.void()
-
-
-/**
  * @summary Coach a message using a FrameWise API key
  */
 export const coachExternalMessageBodyContentMax = 60000;
