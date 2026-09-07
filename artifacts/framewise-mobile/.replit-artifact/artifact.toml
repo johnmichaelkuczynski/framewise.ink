@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/mobile/"
+title = "FrameWise Mobile"
+description = "FrameWise mobile companion app built with Expo. Lets users coach and reframe messages on the go using AI, browse their saved contacts/relationships, and review conversation history. Dark intelligence-agency aesthetic matching the FrameWise web app."
+version = "1.0.0"
+id = "artifacts/framewise-mobile"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/mobile/" ]
+localPort = 23579
+
+[services.development]
+run = "pnpm --filter @workspace/framewise-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/framewise-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/framewise-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "23579"
+BASE_PATH = "/mobile/"

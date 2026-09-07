@@ -249,7 +249,7 @@ export function Chat({ mode = "free", personId, virtualPersonId, conversationId:
               type="file"
               multiple
               className="hidden"
-              accept=".txt,.pdf,.docx,.png,.jpg,.jpeg,.webp"
+              accept=".txt,.pdf,.doc,.docx,.png,.jpg,.jpeg,.webp"
               onChange={(e) => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = ""; }}
             />
             <Textarea
@@ -266,7 +266,7 @@ export function Chat({ mode = "free", personId, virtualPersonId, conversationId:
               className="absolute left-2 bottom-2 h-8 w-8 rounded-md text-muted-foreground hover:text-primary"
               onClick={() => fileInputRef.current?.click()}
               disabled={isStreaming || isExtracting}
-              title="Attach document (.txt, .pdf, .docx, image)"
+              title="Attach document (.txt, .pdf, .doc, .docx, image)"
               data-testid="button-attach-file"
             >
               <Paperclip className="h-4 w-4" />

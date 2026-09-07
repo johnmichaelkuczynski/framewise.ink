@@ -1,6 +1,6 @@
 /**
  * Text extraction for chat attachments.
- * POST /extract-text — accepts .txt, .pdf, .docx, and images (via Vision OCR),
+ * POST /extract-text — accepts .txt, .pdf, .doc, .docx, and images (via Vision OCR),
  * returns { filename, text }. No auth required so free-form chat can use it too,
  * therefore it is rate-limited per IP and validates file signatures server-side.
  */
@@ -12,7 +12,7 @@ const router = Router();
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
 });
 
 const MAX_CHARS = 60000;
@@ -40,14 +40,14 @@ setInterval(() => {
 }, WINDOW_MS).unref();
 
 // --- File signature (magic byte) validation; MIME type is client-controlled ---
-type FileKind = "text" | "pdf" | "docx" | "image";
+type FileKind = "text" | "pdf" | "docx" | "doc" | "image";
 
 function sniffKind(buffer: Buffer, mimetype: string): FileKind | null {
   if (buffer.length >= 5 && buffer.subarray(0, 5).toString("latin1") === "%PDF-") return "pdf";
   // DOCX (and other OOXML) are ZIP containers: PK\x03\x04
   if (buffer.length >= 4 && buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04) return "docx";
-  // Legacy .doc (OLE compound file): D0 CF 11 E0 — explicitly unsupported
-  if (buffer.length >= 4 && buffer[0] === 0xd0 && buffer[1] === 0xcf && buffer[2] === 0x11 && buffer[3] === 0xe0) return null;
+  // Legacy .doc (OLE compound file): D0 CF 11 E0 — mammoth can extract raw text from these
+  if (buffer.length >= 4 && buffer[0] === 0xd0 && buffer[1] === 0xcf && buffer[2] === 0x11 && buffer[3] === 0xe0) return "doc";
   if (buffer.length >= 8 && buffer[0] === 0x89 && buffer.subarray(1, 4).toString("latin1") === "PNG") return "image"; // png
   if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "image"; // jpeg
   if (buffer.length >= 12 && buffer.subarray(0, 4).toString("latin1") === "RIFF" && buffer.subarray(8, 12).toString("latin1") === "WEBP") return "image"; // webp
@@ -76,7 +76,7 @@ router.post("/extract-text", upload.single("file"), async (req, res): Promise<vo
 
   if (!kind) {
     res.status(400).json({
-      error: `Unsupported file type for ${originalname}. Upload .txt, .pdf, .docx, or an image (PNG/JPG/WebP). Legacy .doc files aren't supported — please re-save as .docx.`,
+      error: `Unsupported file type for ${originalname}. Upload .txt, .pdf, .doc, .docx, or an image (PNG/JPG/WebP).`,
     });
     return;
   }
@@ -104,7 +104,8 @@ router.post("/extract-text", upload.single("file"), async (req, res): Promise<vo
       } finally {
         await unlink(tmpPath).catch(() => {});
       }
-    } else if (kind === "docx") {
+    } else if (kind === "docx" || kind === "doc") {
+      // mammoth handles both modern .docx (OOXML) and legacy .doc (OLE) formats
       const mammoth = await import("mammoth");
       const result = await mammoth.extractRawText({ buffer });
       text = result.value;
