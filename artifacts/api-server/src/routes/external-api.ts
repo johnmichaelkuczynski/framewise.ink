@@ -82,7 +82,7 @@ router.post("/v1/coach", requireApiKey, apiKeyRateLimit, async (req, res): Promi
     }
     res.json({ output });
   } catch (err) {
-    req.log.error({ err, userId: req.user!.id }, "External coaching request failed");
+    req.log.error({ err }, "External coaching request failed");
     res.status(502).json({ error: "FrameWise could not process the request" });
   }
 });

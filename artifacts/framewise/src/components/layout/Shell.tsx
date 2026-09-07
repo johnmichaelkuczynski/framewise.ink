@@ -1,7 +1,7 @@
 import { useGetMe } from "@workspace/api-client-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { LogOut, Home, MessageSquare, Users, Cpu, FileText, Menu, X, LogIn, KeyRound } from "lucide-react";
+import { LogOut, Home, MessageSquare, Users, Cpu, FileText, Menu, X, LogIn } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { useLogout } from "@workspace/api-client-react";
@@ -24,7 +24,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
     { href: "/relationships", label: "Real Persons", icon: Users, requiresAuth: true },
     { href: "/virtual", label: "Virtual Persons", icon: Cpu, requiresAuth: true },
     { href: "/documents", label: "Documents", icon: FileText, requiresAuth: true },
-    { href: "/api-keys", label: "API Keys", icon: KeyRound, requiresAuth: true },
   ];
 
   return (

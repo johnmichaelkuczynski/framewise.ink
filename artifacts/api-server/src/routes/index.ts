@@ -10,7 +10,6 @@ import messagesRouter from "./messages";
 import documentsRouter from "./documents";
 import photosRouter from "./photos";
 import dashboardRouter from "./dashboard";
-import apiKeysRouter from "./api-keys";
 import externalApiRouter from "./external-api";
 
 const router: IRouter = Router();
@@ -21,7 +20,6 @@ router.use(freeChatRouter);
 router.use(extractRouter);
 // These must be mounted before browser routers that install router-wide
 // session middleware, otherwise external Bearer requests are intercepted.
-router.use(apiKeysRouter);
 router.use(externalApiRouter);
 router.use(personsRouter);
 router.use(virtualPersonsRouter);
