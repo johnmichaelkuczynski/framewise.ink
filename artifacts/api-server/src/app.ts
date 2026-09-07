@@ -127,6 +127,9 @@ app.use(
   }),
 );
 
+// Parse the public external API with a tight cap before the legacy app-wide
+// parser. This rejects oversized payloads before allocating up to 50 MB.
+app.use("/api/v1", express.json({ limit: "256kb" }));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
 

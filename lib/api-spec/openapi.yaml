@@ -24,6 +24,10 @@ tags:
     description: Uploaded documents
   - name: dashboard
     description: Dashboard stats
+  - name: apiKeys
+    description: API key management
+  - name: externalApi
+    description: External FrameWise API
 
 paths:
   /healthz:
@@ -70,6 +74,116 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+
+  /api-keys:
+    get:
+      operationId: listApiKeys
+      tags: [apiKeys]
+      summary: List active API keys for the signed-in user
+      responses:
+        "200":
+          description: Active API keys (secrets are never returned)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ApiKey"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createApiKey
+      tags: [apiKeys]
+      summary: Create an API key; the secret is returned only once
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApiKeyInput"
+      responses:
+        "201":
+          description: API key created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatedApiKey"
+        "400":
+          description: Invalid name
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api-keys/{id}:
+    delete:
+      operationId: revokeApiKey
+      tags: [apiKeys]
+      summary: Permanently revoke an API key
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: API key revoked
+        "404":
+          description: API key not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /v1/coach:
+    post:
+      operationId: coachExternalMessage
+      tags: [externalApi]
+      summary: Coach a message using a FrameWise API key
+      security:
+        - framewiseApiKey: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalCoachInput"
+      responses:
+        "200":
+          description: FrameWise coaching response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExternalCoachResponse"
+        "400":
+          description: Missing content
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Missing, invalid, or revoked API key
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "413":
+          description: Request content is too large
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          description: Rate or concurrency limit reached
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /persons:
     get:
@@ -557,6 +671,11 @@ paths:
                 $ref: "#/components/schemas/DashboardStats"
 
 components:
+  securitySchemes:
+    framewiseApiKey:
+      type: http
+      scheme: bearer
+      bearerFormat: FrameWise API key
   schemas:
     HealthStatus:
       type: object
@@ -926,6 +1045,64 @@ components:
           minLength: 1
       required:
         - content
+
+    ApiKey:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        keyPrefix:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        lastUsedAt:
+          type: ["string", "null"]
+          format: date-time
+      required: [id, name, keyPrefix, createdAt, lastUsedAt]
+
+    ApiKeyInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 80
+      required: [name]
+
+    CreatedApiKey:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        key:
+          type: string
+          description: Full API key, returned only once
+        keyPrefix:
+          type: string
+        message:
+          type: string
+      required: [id, name, key, keyPrefix, message]
+
+    ExternalCoachInput:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 60000
+      required: [content]
+
+    ExternalCoachResponse:
+      type: object
+      properties:
+        output:
+          type: string
+      required: [output]
 
     Document:
       type: object

@@ -209,6 +209,44 @@ export interface MessageInput {
   content: string;
 }
 
+export interface ApiKey {
+  id: string;
+  name: string;
+  keyPrefix: string;
+  createdAt: string;
+  /** @nullable */
+  lastUsedAt: string | null;
+}
+
+export interface ApiKeyInput {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  name: string;
+}
+
+export interface CreatedApiKey {
+  id: string;
+  name: string;
+  /** Full API key, returned only once */
+  key: string;
+  keyPrefix: string;
+  message: string;
+}
+
+export interface ExternalCoachInput {
+  /**
+     * @minLength 1
+     * @maxLength 60000
+     */
+  content: string;
+}
+
+export interface ExternalCoachResponse {
+  output: string;
+}
+
 export interface Document {
   id: number;
   userId: string;

@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Relationships, NewRelationship, RelationshipView, RelationshipProfile } from "@/pages/relationships";
 import { VirtualPersons, NewVirtualPerson, VirtualPersonView, VirtualPersonProfile } from "@/pages/virtual";
 import { Documents } from "@/pages/documents";
+import { ApiKeys } from "@/pages/api-keys";
 
 function AppRouter() {
   return (
@@ -36,6 +37,7 @@ function AppRouter() {
       </Route>
 
       <Route path="/documents"><Shell><Documents /></Shell></Route>
+      <Route path="/api-keys"><Shell><ApiKeys /></Shell></Route>
 
       <Route>
         <Shell><NotFound /></Shell>
